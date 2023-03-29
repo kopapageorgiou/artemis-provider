@@ -5,9 +5,14 @@ services:
     container_name: 'scyllaDB'
     image: 'scylladb/scylla'
     restart: always
-    #command: --api-address 0.0.0.0
+    #command: --api-address 172.19.0.3
+    # deploy:
+    #   replicas: 1
+    #   placement:
+    #     constraints: [node.hostname == ip13]
     networks:
-      - custom-bridge
+      - custom-b
+#
     ports:
       - "0.0.0.0:9042:9042"
       - "0.0.0.0:9160:9160"
@@ -15,12 +20,20 @@ services:
   rest_api:
     container_name: 'restapi_service'
     build: ./rest_api/
+    environment:
+      DB_HOST: scylla
     ports:
       - "8000:8000"
     volumes:
       - ./rest_api/app:/root/service
     networks:
-      - custom-bridge
+      - custom-b
 
 networks:
-  custom-bridge:
+  custom-b:
+    #external: true
+    driver: bridge
+    # ipam:
+    #   config:
+    #     - subnet: 172.19.0.0/16
+    #       gateway: 172.19.0.1
