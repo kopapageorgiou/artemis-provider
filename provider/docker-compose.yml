@@ -17,11 +17,35 @@ services:
       - "0.0.0.0:9042:9042"
       - "0.0.0.0:9160:9160"
 
+  ipfs:
+    container_name: 'ipfs_node'
+    image: 'ipfs/kubo'
+    restart: always
+    # deploy:
+    #   replicas: 1
+    #   placement:
+    #     constraints: [node.hostname == ip13]
+    networks:
+      - custom-b
+    ports:
+      - "4001:4001"
+      - "5001:5001"
+      - "8080:8080"
+  orbit:
+    container_name: 'orbit_db'
+    image: 'orbitdb/orbit-db-http-api'
+    command: cli.js api --ipfs-host /ip4/172.22.0.2/tcp/5001 --orbitdb-dir ./orbitdb
+    ports:
+      - "3000:3000"
+    networks:
+      - custom-b
+
   rest_api:
     container_name: 'restapi_service'
     build: ./rest_api/
     environment:
       DB_HOST: scylla
+      ORBIT_HOST: ipfs
     ports:
       - "8000:8000"
     volumes:
