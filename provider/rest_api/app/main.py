@@ -30,9 +30,9 @@ def hello():
 def hello():
     try:
         #ipfs_client = ipfs.connect('/dns/172.21.0.2/tcp/5001/http')
-        client = OrbitDbAPI(base_url=f"http://172.21.0.2:5001")
+        client = OrbitDbAPI(base_url=f"http://{os.environ['ORBIT_HOST']}:3000", timeout=600)
         print(os.environ['ORBIT_HOST'], file=sys.stderr)
-        db = client.db('testOrbitdbfgdgf')
+        db = client.db('my-feed')
         print("here2", file=sys.stderr)
         return{"Databases": client.list_dbs()}
     except Exception as e:
