@@ -18,34 +18,54 @@ services:
       - "0.0.0.0:9160:9160"
 
   ipfs:
-    container_name: 'ipfs_node'
-    image: 'ipfs/kubo'
+    container_name: 'ipfs'
+    image: 'devpapas/ipfs-node:v1'
     restart: always
-    # deploy:
-    #   replicas: 1
-    #   placement:
-    #     constraints: [node.hostname == ip13]
+    command: -c "ipfs daemon --init"
+    # healthcheck:
+    #     test: ["CMD", "curl", "-f", "http://localhost:5001"]
+    #     interval: 30s
+    #     timeout: 10s
+    #     retries: 5
     networks:
       - custom-b
     ports:
       - "4001:4001"
       - "5001:5001"
       - "8080:8080"
-  orbit:
-    container_name: 'orbit_db'
-    image: 'orbitdb/orbit-db-http-api'
-    command: cli.js api --ipfs-host /ip4/172.22.0.2/tcp/5001 --orbitdb-dir ./orbitdb
-    ports:
-      - "3000:3000"
+
+  orbitdb:
+    container_name: 'devpapas/orbit-db-node'
+    image: 'orbitdb-node:v1'
+    restart: on-failure
+    # depends_on:
+    #   ipfs:
+    #     condition: service_healthy
+    environment:
+      IPFS: ipfs
+    #command: -c "echo $(which cli.js)"
+    command: -c "/root/.nvm/versions/node/v19.8.1/bin/node orbit-db-http-api/src/cli.js api --ipfs-host $${IPFS} --orbitdb-dir /db --https-key /certificates/MyPrivate.key --https-cert /usr/local/share/ca-certificates/X509Certificate.crt"
     networks:
       - custom-b
+    ports:
+      - "0.0.0.0:3000:3000"
+    
+    
+  # orbit:
+  #   container_name: 'orbit_db'
+  #   image: 'orbitdb/orbit-db-http-api'
+  #   command: cli.js api --ipfs-host /ip4/172.22.0.2/tcp/5001 --orbitdb-dir ./orbitdb
+  #   ports:
+  #     - "3000:3000"
+  #   networks:
+  #     - custom-b
 
   rest_api:
     container_name: 'restapi_service'
     build: ./rest_api/
     environment:
       DB_HOST: scylla
-      ORBIT_HOST: ipfs
+      ORBIT_HOST: orbitdb
     ports:
       - "8000:8000"
     volumes:
@@ -54,6 +74,8 @@ services:
       - custom-b
 
 networks:
+  testnet:
+    external: true
   custom-b:
     #external: true
     driver: bridge
