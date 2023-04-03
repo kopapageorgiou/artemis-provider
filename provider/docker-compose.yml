@@ -34,8 +34,25 @@ services:
       - "5001:5001"
       - "8080:8080"
 
+  # orbitdb:
+  #   container_name: 'orbit-db-node'
+  #   image: 'orbitdb/orbit-db-http-api:latest'
+  #   build: ./Orbitdb
+  #   restart: on-failure
+  #   # depends_on:
+  #   #   ipfs:
+  #   #     condition: service_healthy
+  #   environment:
+  #     IPFS: ipfs
+  #   command: src/cli.js api --ipfs-host 172.21.0.2 --orbitdb-dir /db --https-key /certs/MyPrivate.key --https-cert /certs/X509Certificate.crt
+  #   #command: -c "/root/.nvm/versions/node/v12.14.0/bin/node orbit-db-http-api-dev/src/cli.js api --ipfs-host $${IPFS} --orbitdb-dir /db --https-key /certificates/MyPrivate.key --https-cert /usr/local/share/ca-certificates/X509Certificate.crt"
+  #   networks:
+  #     - custom-b
+  #   ports:
+  #     - "0.0.0.0:3000:3000"
+
   orbitdb:
-    container_name: 'orbit-db-node'
+    container_name: 'orbitdb'
     image: 'devpapas/orbitdb:experimental'
     restart: on-failure
     # depends_on:
@@ -44,7 +61,7 @@ services:
     environment:
       IPFS: ipfs
     #command: -c "echo $(which cli.js)"
-    command: -c "/root/.nvm/versions/node/v12.14.0/bin/node orbit-db-http-api-dev/src/cli.js api --ipfs-host $${IPFS} --orbitdb-dir /db --https-key /certificates/MyPrivate.key --https-cert /usr/local/share/ca-certificates/X509Certificate.crt"
+    command: -c "/root/.nvm/versions/node/v12.14.0/bin/node orbit-db-http-api-dev/src/cli.js api --ipfs-host $${IPFS} --orbitdb-dir /db --https-key /certificates/orbitdb.key --https-cert /certificates/orbitdb.crt"
     networks:
       - custom-b
     ports:
