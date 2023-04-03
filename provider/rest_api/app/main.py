@@ -4,8 +4,11 @@ from routers import Clients, Gateways, Sensors, Measurements
 from orbitdbapi import OrbitDbAPI
 import os, sys
 import logging
+#import pip_system_certs.wrapt_requests
 #import ipfshttpclient as ipfs
 import requests
+import certifi
+import orbitdbapi
 
 cluster = Cluster([os.environ['DB_HOST']])
 
@@ -29,12 +32,18 @@ def hello():
 @app.post('/testOrbitdb')
 def hello():
     try:
+        print(os.environ['ORBIT_HOST'], file=sys.stderr)
         #ipfs_client = ipfs.connect('/dns/172.21.0.2/tcp/5001/http')
         client = OrbitDbAPI(base_url=f"https://{os.environ['ORBIT_HOST']}:3000",timeout=60)
-        print(os.environ['ORBIT_HOST'], file=sys.stderr)
-        db = client.db('docstore')
-        print("here2", file=sys.stderr)
-        return{"Databases": client.list_dbs()}
+        db = client.db('test-name')
+        
+        # with open('/etc/ssl/certs/X509Certificate.pem', 'rb') as infile:
+        #     customca = infile.read()
+        # with open(cafile, 'ab') as outfile:
+        #     outfile.write(b'\n')
+        #     outfile.write(customca)
+         #print(db, file=sys.stderr)
+        return{"Databases": db}
     except Exception as e:
         print(e.args, file=sys.stderr)
         return {"exception": e}
