@@ -1,14 +1,11 @@
 from fastapi import FastAPI
 from cassandra.cluster import Cluster
 from routers import Clients, Gateways, Sensors, Measurements
-from orbitdbapi import OrbitDbAPI
 import os, sys
 import logging
+from Orbitdbapi import OrbitdbAPI
 #import pip_system_certs.wrapt_requests
 #import ipfshttpclient as ipfs
-import requests
-import certifi
-import orbitdbapi
 
 cluster = Cluster([os.environ['DB_HOST']])
 
@@ -33,10 +30,16 @@ def hello():
 def hello():
     try:
         print(os.environ['ORBIT_HOST'], file=sys.stderr)
-        #ipfs_client = ipfs.connect('/dns/172.21.0.2/tcp/5001/http')
-        BASE = f"http://{os.environ['ORBIT_HOST']}:3000"
+        orbitdb = OrbitdbAPI(orbithost=os.environ['ORBIT_HOST'], port=3000)
+        db = orbitdb.load(dbname='test-base1')
+        print(db, file=sys.stderr)
+        res = db.insert(data={"key": 1, "name": "testName"})
+        print(res, file=sys.stderr)
+        res = db.query(query={"attribute": "name", "operator": "eq", "value": "testName"})
+        print(res, file=sys.stderr)
+        res = db.getAll()
+        print(res, file=sys.stderr)
         #client = OrbitDbAPI(base_url=f"https://{os.environ['ORBIT_HOST']}:3000",timeout=60)
-        res = requests.post(BASE+'/insertData', json={"name": "test-base1", "type": "docstore", "data": {"_id": 1, "name": "testName"}})
         #print(res.json(), file=sys.stderr)
         
         # with open('/etc/ssl/certs/X509Certificate.pem', 'rb') as infile:
@@ -45,7 +48,7 @@ def hello():
         #     outfile.write(b'\n')
         #     outfile.write(customca)
          #print(db, file=sys.stderr)
-        return{"Databases": res.json()}
+        return{"Database": db}
     except Exception as e:
         print(e.args, file=sys.stderr)
         return {"exception": e}
