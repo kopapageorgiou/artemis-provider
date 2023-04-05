@@ -113,43 +113,8 @@ app.post('/createDB', async (req, res) => {
 app.post('/insertData', async (req, res) => {
     try{
         const {name} = req.body;
-        const {type} = req.body;
         const {data} = req.body;
-        //const {options} = req.body;
-        //const orbitAddress = await orbitdb.determineAddress(name, type);
-        try{
-            if(_dataBases.hasOwnProperty(name)){
-                _dataBases[name].put(data, { pin: true });
-                // for (var key in data){
-                //     if (data.hasOwnProperty(key)){
-                //         _dataBases[name].put({key: data[key]});
-                //     }
-                // }
-            } else{
-                _dataBases[name] = await orbitdb.open(await orbitdb.determineAddress(name, type));
-                console.warn('WARN|',`Database ${name} was not loaded, loading now`);
-                _dataBases[name].put(data, { pin: true });
-                // for (var key in data){
-                //     if (data.hasOwnProperty('_id')){
-                //         console.log(key);
-                //         _dataBases[name].put({key: data[key]});
-                //     }
-                // }
-            }
-        }catch (error){
-            _dataBases[name] = await orbitdb.open(name, {
-                create: true,
-                type: type,
-                overwrite: false,
-                replicate: true
-            });
-            console.warn('WARN|',`Database ${name} not found, creating new database`);
-            for (var key in data){
-                if (data.hasOwnProperty(key)){
-                    _dataBases[name].put(data, {pin: true});
-                }
-            }
-        }
+        _dataBases[name].put(data, { pin: true });
         res.status(200).send({
             'info': 'Data inserted successfully',
             'data_base': infoDatabase(name)
@@ -157,7 +122,7 @@ app.post('/insertData', async (req, res) => {
     } catch (error){
         console.error('ERR | in /insertData:', error.message);
         res.status(500).send({
-            'info': 'Could not open/store data to database'
+            'info': 'Could not store data to database'
         });
     }
     
@@ -166,31 +131,11 @@ app.post('/insertData', async (req, res) => {
 app.post('/getData', async (req, res) => {
     try{
         const {name} = req.body;
-        const {type} = req.body;
         //const {data} = req.body;
         var dataRes;
         //const {options} = req.body;
         //const orbitAddress = await orbitdb.determineAddress(name, type);
-        try{
-            if(_dataBases.hasOwnProperty(name)){
-                dataRes = _dataBases[name].get('');
-                // for (var key in data){
-                //     if (data.hasOwnProperty(key)){
-                //         dataRes = _dataBases[name].get('');
-                //     }
-                // }
-            } else{
-                _dataBases[name] = await orbitdb.open(await orbitdb.determineAddress(name, type));
-                console.warn('WARN|',`Database ${name} was not loaded, loading now`);
-                dataRes = _dataBases[name].get('');
-            }
-        }catch (error){
-            console.error('ERR | in /getData:', error.message);
-            res.status(414).send({
-                'info': 'Database does not exist'
-            });
-        }
-        
+        dataRes = _dataBases[name].get('');
         res.status(200).send({
             'info': 'Data inserted successfully',
             'data': dataRes
@@ -198,7 +143,7 @@ app.post('/getData', async (req, res) => {
     } catch (error){
         console.error('ERR | in /getData:', error.message);
         res.status(500).send({
-            'info': 'Could not open/store data to database'
+            'info': 'Could not get data from database'
         });
     }
     
@@ -261,6 +206,44 @@ app.post('/queryData', async (req, res) => {
         console.error('ERR | in /queryData:', error.message);
         res.status(500).send({
             'info': 'Could not open/query database'
+        });
+    }
+    
+});
+
+app.post('/loadDB', async (req, res) => {
+    try{
+        const {name} = req.body;
+        var dataRes;
+        //const {options} = req.body;
+        //const orbitAddress = await orbitdb.determineAddress(name, type);
+        try{
+            if(_dataBases.hasOwnProperty(name)){
+                dataRes = infoDatabase(name);
+            } else{
+                _dataBases[name] = await orbitdb.open(await orbitdb.determineAddress(name, 'docstore'));
+                console.warn('WARN|',`Database ${name} was not loaded, loading now`);
+                dataRes = infoDatabase(name);
+            }
+        }catch (error){
+            _dataBases[name] = await orbitdb.open(name, {
+                create: true,
+                type: 'docstore',
+                overwrite: false,
+                replicate: true
+            });
+            console.warn('WARN|',`Database ${name} not found, creating new database`);
+            dataRes = infoDatabase(name);
+        }
+        
+        res.status(200).send({
+            'info': 'Query fetched successfully',
+            'data': dataRes
+        });
+    } catch (error){
+        console.error('ERR | in /loadDB:', error.message);
+        res.status(500).send({
+            'info': 'Could not create or load database'
         });
     }
     
