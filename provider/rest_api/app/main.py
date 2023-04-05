@@ -34,8 +34,10 @@ def hello():
     try:
         print(os.environ['ORBIT_HOST'], file=sys.stderr)
         #ipfs_client = ipfs.connect('/dns/172.21.0.2/tcp/5001/http')
-        client = OrbitDbAPI(base_url=f"https://{os.environ['ORBIT_HOST']}:3000",timeout=60)
-        db = client.db('test-name')
+        BASE = f"http://{os.environ['ORBIT_HOST']}:3000"
+        #client = OrbitDbAPI(base_url=f"https://{os.environ['ORBIT_HOST']}:3000",timeout=60)
+        res = requests.post(BASE+'/insertData', json={"name": "test-base1", "type": "docstore", "data": {"_id": 1, "name": "testName"}})
+        #print(res.json(), file=sys.stderr)
         
         # with open('/etc/ssl/certs/X509Certificate.pem', 'rb') as infile:
         #     customca = infile.read()
@@ -43,7 +45,7 @@ def hello():
         #     outfile.write(b'\n')
         #     outfile.write(customca)
          #print(db, file=sys.stderr)
-        return{"Databases": db}
+        return{"Databases": res.json()}
     except Exception as e:
         print(e.args, file=sys.stderr)
         return {"exception": e}
