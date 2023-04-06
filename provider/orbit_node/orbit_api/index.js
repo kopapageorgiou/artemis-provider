@@ -19,6 +19,7 @@ const options = program.opts();
 
 
 var _dataBases = {};
+var _replicating = [];
 app.use(express.json());
 
 function infoDatabase(name){
@@ -218,12 +219,52 @@ app.post('/loadDB', async (req, res) => {
         //const {options} = req.body;
         //const orbitAddress = await orbitdb.determineAddress(name, type);
         try{
-            if(_dataBases.hasOwnProperty(name)){
+            if(OrbitDB.isValidAddress(name)){
+                _replicating.push(name);
+                console.log('INFO|',`Database ${name} replicating`);
+                orbitdb.open(name).then((db) => {
+                    _replicating.splice(db.name, 1);
+                    _dataBases[db.dbname] = db;
+                //var db = await orbitdb.open(name);
+                    //_dataBases[db.dbname] = db;
+                    //_dataBases[db.dbname].events.on('replicated', (address) => {
+                    console.log('INFO|',`Database ${name} replicated`);
+                })
+                .catch((error) => {
+                    if (error.message.includes('context deadline exceeded')){
+                        console.error('ERR | failed to replicate. Retrying..');
+                        orbitdb.open(name).then((db) => {
+                            _replicating.splice(db.name, 1);
+                            _dataBases[db.dbname] = db;
+                        //var db = await orbitdb.open(name);
+                            //_dataBases[db.dbname] = db;
+                            //_dataBases[db.dbname].events.on('replicated', (address) => {
+                            console.log('INFO|',`Database ${name} replicated`);
+                        });
+                    }
+                });
+                res.status(200).send({
+                    'info': 'Database Queued for replication'
+                });
+                
+            }
+            else if(_dataBases.hasOwnProperty(name)){
                 dataRes = infoDatabase(name);
+                res.status(200).send({
+                    'info': 'Query fetched successfully',
+                    'data': dataRes
+                });
             } else{
                 _dataBases[name] = await orbitdb.open(await orbitdb.determineAddress(name, 'docstore'));
+                _dataBases[name].events.on('replicated', (address) => {
+                    console.log('INFO|',`Database ${name} replicated`);
+                });
                 console.warn('WARN|',`Database ${name} was not loaded, loading now`);
                 dataRes = infoDatabase(name);
+                res.status(200).send({
+                    'info': 'Query fetched successfully',
+                    'data': dataRes
+                });
             }
         }catch (error){
             _dataBases[name] = await orbitdb.open(name, {
@@ -234,12 +275,16 @@ app.post('/loadDB', async (req, res) => {
             });
             console.warn('WARN|',`Database ${name} not found, creating new database`);
             dataRes = infoDatabase(name);
+            res.status(200).send({
+                    'info': 'Query fetched successfully',
+                    'data': dataRes
+                });
         }
         
-        res.status(200).send({
-            'info': 'Query fetched successfully',
-            'data': dataRes
-        });
+        // res.status(200).send({
+        //     'info': 'Query fetched successfully',
+        //     'data': dataRes
+        // });
     } catch (error){
         console.error('ERR | in /loadDB:', error.message);
         res.status(500).send({
