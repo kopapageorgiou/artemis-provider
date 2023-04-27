@@ -17,22 +17,58 @@ services:
       - "0.0.0.0:9042:9042"
       - "0.0.0.0:9160:9160"
 
+  # ipfs:
+  #   container_name: 'ipfs'
+  #   image: 'devpapas/ipfs-node:v1'
+  #   restart: always
+  #   command: -c "ipfs daemon --init --enable-pubsub-experiment"
+  #   # healthcheck:
+  #   #     test: ["CMD", "curl", "-f", "http://localhost:5001"]
+  #   #     interval: 30s
+  #   #     timeout: 10s
+  #   #     retries: 5
+  #   networks:
+  #     - custom-b
+  #   ports:
+  #     - "4001:4001"
+  #     - "5001:5001"
+  #     - "8080:8080"
   ipfs:
     container_name: 'ipfs'
-    image: 'ipfs/go-ipfs:v0.16.0'
+    image: 'ipfs/go-ipfs:latest'
+    #build:
+    #  context: ./ipfs_node/
+    #  dockerfile: Dockerfile
+    #  args:
+    #    SWARM_KEY_DEST: ./swarm.key
+    #environment:
+      #- LIBP2P_FORCE_PNET=1
+      #- IPFS_SWARM_KEY_FILE=./swarm.key
     restart: always
     command: "daemon --enable-pubsub-experiment"
+    # healthcheck:
+    #     test: ["CMD", "curl", "-f", "http://localhost:5001"]
+    #     interval: 30s
+    #     timeout: 10s
+    #     retries: 5
     networks:
       - custom-b
     ports:
       - "4001:4001"
       - "5001:5001"
       - "8080:8080"
+    volumes:
+    - ./ipfs/swarm.key:/ipfs/swarm.key
+    - ./ipfs/init-priv.sh:/container-init.d/001-init-priv.sh
 
   orbitdb:
     container_name: 'orbitdb'
+    #image: 'orbitdb/orbit-db-http-api:latest'
     build: ./orbit_node/
     restart: always
+    # depends_on:
+    #   ipfs:
+    #     condition: service_healthy
     environment:
       IPFS: ipfs
     command: node orbit_api --orbitdb-dir /root/orbitdb
@@ -41,6 +77,32 @@ services:
       - custom-b
     ports:
       - "0.0.0.0:3000:3000"
+
+  # orbitdb:
+  #   container_name: 'orbitdb'
+  #   image: 'devpapas/orbitdb:experimental'
+  #   restart: on-failure
+  #   # depends_on:
+  #   #   ipfs:
+  #   #     condition: service_healthy
+  #   environment:
+  #     IPFS: ipfs
+  #   #command: -c "echo $(which cli.js)"
+  #   command: -c "/root/.nvm/versions/node/v12.14.0/bin/node orbit-db-http-api-dev/src/cli.js api --ipfs-host $${IPFS} --orbitdb-dir /db --https-key /certificates/orbitdb.key --https-cert /certificates/orbitdb.crt"
+  #   networks:
+  #     - custom-b
+  #   ports:
+  #     - "0.0.0.0:3000:3000"
+    
+    
+  # orbit:
+  #   container_name: 'orbit_db'
+  #   image: 'orbitdb/orbit-db-http-api'
+  #   command: cli.js api --ipfs-host /ip4/172.22.0.2/tcp/5001 --orbitdb-dir ./orbitdb
+  #   ports:
+  #     - "3000:3000"
+  #   networks:
+  #     - custom-b
 
   rest_api:
     container_name: 'restapi_service'
