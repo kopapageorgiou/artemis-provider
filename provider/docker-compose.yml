@@ -41,9 +41,10 @@ services:
     #  dockerfile: Dockerfile
     #  args:
     #    SWARM_KEY_DEST: ./swarm.key
-    #environment:
-      #- LIBP2P_FORCE_PNET=1
-      #- IPFS_SWARM_KEY_FILE=./swarm.key
+    environment:
+      - LIBP2P_FORCE_PNET=1
+      #EXTERNAL_IP: $${ip -4 addr show enp1s0 | grep inet | awk '{print $2}' | cut -d '/' -f1}
+      #IPFS_SWARM_KEY_FILE: ./ipfs/swarm.key
     restart: always
     command: "daemon --enable-pubsub-experiment"
     # healthcheck:
@@ -58,8 +59,9 @@ services:
       - "5001:5001"
       - "8080:8080"
     volumes:
-    - ./ipfs/swarm.key:/ipfs/swarm.key
+    - ./ipfs/swarm.key:/data/ipfs/swarm.key
     - ./ipfs/init-priv.sh:/container-init.d/001-init-priv.sh
+    - ./configuration/config.env:/config.env
 
   orbitdb:
     container_name: 'orbitdb'
