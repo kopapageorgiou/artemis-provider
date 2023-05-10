@@ -3,6 +3,8 @@ import { create } from 'ipfs-http-client'
 import { program } from 'commander';
 import express from 'express';
 import fs from 'fs';
+
+AccessControllers.addAccessController({AccessController: CustomAccessController})
 const app = express();
 const PORT = 3000;
 
@@ -95,7 +97,12 @@ app.post('/createDB', async (req, res) => {
         const {name} = req.body;
         const {type} = req.body;
         const {options} = req.body;
-        db = await orbitdb.create(name, type, options);
+        _dataBases[name] = await orbitdb.create(name, type, options);
+        setController(_dataBases[name]);
+
+        // Usage example
+        await db.load()
+        await db.put({ name: 'John Doe', age: 30 })
         console.info('INFO|',`Database ${name} created`);
         writeID(name, db.id);
         res.status(200).send({
@@ -188,7 +195,9 @@ app.post('/queryData', async (req, res) => {
                 //     }
                 // }
             } else{
-                _dataBases[name] = await orbitdb.open(await orbitdb.determineAddress(name, 'docstore'));
+                _dataBases[name] = orbitdb.open(await orbitdb.determineAddress(name, 'docstore')).then(()=>{
+                    setController(_dataBases[name]);
+                });
                 console.warn('WARN|',`Database ${name} was not loaded, loading now`);
                 dataRes = getQuery(_dataBases[name], attribute, operator, value);
             }
@@ -307,7 +316,7 @@ const server = app.listen(
         try{
             
             ipfs = create(new URL(`http://${options.ipfsHost}:${options.ipfsPort}`));
-            orbitdb = await OrbitDB.createInstance(ipfs, {directory: options.orbitdbDir});
+            orbitdb = await OrbitDB.createInstance(ipfs, {directory: options.orbitdbDir, AccessControllers: AccessControllers});
             console.log(`Server is running on port ${PORT}`);
         } catch (error){
             console.error(error);
@@ -315,3 +324,29 @@ const server = app.listen(
         }
     }
 )
+
+async function setController(db){
+    await db.access.grant(db.identity.id, 'write');
+    await db.access.load();// Load access controller state
+    db.access.write.accessController = new CustomAccessController();
+    db.access.write.save(); // Save access controller state
+}
+
+class CustomAccessController extends AccessController{
+    constructor(){
+
+    }
+    static get type () {return 'actype'}
+    
+    canAppend(entry, identityProvider){
+        return true;
+    }
+
+    canPut(key, entry, identityProvider){
+        return false;
+    }
+
+    canDelete(key, entry, identityProvider){
+        return false;
+    }
+}
