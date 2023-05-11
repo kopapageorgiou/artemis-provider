@@ -100,9 +100,6 @@ app.post('/createDB', async (req, res) => {
         _dataBases[name] = await orbitdb.create(name, type, options);
         setController(_dataBases[name]);
 
-        // Usage example
-        await db.load()
-        await db.put({ name: 'John Doe', age: 30 })
         console.info('INFO|',`Database ${name} created`);
         writeID(name, db.id);
         res.status(200).send({
@@ -116,6 +113,50 @@ app.post('/createDB', async (req, res) => {
         });
     }
     
+});
+
+app.post('/addPeer', async (req, res) => {
+    const {db_name} = req.body;
+    const {peerIdentity} = req.body;
+    try{
+        if(_dataBases.hasOwnProperty(db_name)){
+            const accessControl = db.access.write.getConfiguration()
+
+            // Step 3: Modify the access control configuration
+            accessControl.push(peerIdentity)
+
+            // Step 4: Save and apply the updated access control configuration
+            db.access.write.setConfiguration(accessControl)
+
+            // Step 5: Grant write access to the new peer
+            await db.access.grant(peerIdentity, 'write')
+
+            // Step 6: Save and apply the access control changes
+            await db.access.write.save()
+        } else{
+            _dataBases[db_name] = orbitdb.open(await orbitdb.determineAddress(db_name, 'docstore')).then(async ()=>{
+                const accessControl = db.access.write.getConfiguration()
+
+                // Step 3: Modify the access control configuration
+                accessControl.push(peerIdentity)
+
+                // Step 4: Save and apply the updated access control configuration
+                db.access.write.setConfiguration(accessControl)
+
+                // Step 5: Grant write access to the new peer
+                await db.access.grant(peerIdentity, 'write')
+
+                // Step 6: Save and apply the access control changes
+                await db.access.write.save()
+            });
+            console.warn('WARN|',`Database ${db_name} was not loaded, loading now`);
+        }
+    }catch (error){
+        console.error('ERR | in /addPeer:', error.message);
+        res.status(414).send({
+            'info': 'Database does not exist'
+        });
+    }
 });
 
 app.post('/insertData', async (req, res) => {
@@ -318,6 +359,7 @@ const server = app.listen(
             ipfs = create(new URL(`http://${options.ipfsHost}:${options.ipfsPort}`));
             orbitdb = await OrbitDB.createInstance(ipfs, {directory: options.orbitdbDir, AccessControllers: AccessControllers});
             console.log(`Server is running on port ${PORT}`);
+            console.log(`Orbit-db peer public key: ${orbitdb.identity.id}`)
         } catch (error){
             console.error(error);
             server.close();
@@ -326,7 +368,7 @@ const server = app.listen(
 )
 
 async function setController(db){
-    await db.access.grant(db.identity.id, 'write');
+    await db.access.grant('write', db.identity.id);
     await db.access.load();// Load access controller state
     db.access.write.accessController = new CustomAccessController();
     db.access.write.save(); // Save access controller state
