@@ -14,7 +14,8 @@
     "express": "^4.18.2",
     "flatted": "^3.2.7",
     "ipfs-http-client": "^60.0.0",
-    "orbit-db": "^0.29.0"
+    "orbit-db": "^0.29.0",
+    "orbit-db-access-controllers": "^0.4.0"
   },
   "type": "module"
 }
