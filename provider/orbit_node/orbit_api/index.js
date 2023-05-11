@@ -1,8 +1,29 @@
 import OrbitDB from 'orbit-db'
+import AccessControllers from 'orbit-db-access-controllers'
+import AccessController from 'orbit-db-access-controllers/interface'
 import { create } from 'ipfs-http-client'
 import { program } from 'commander';
 import express from 'express';
 import fs from 'fs';
+
+class CustomAccessController extends AccessController{
+    constructor(){
+
+    }
+    static get type () {return 'actype'}
+    
+    canAppend(entry, identityProvider){
+        return true;
+    }
+
+    canPut(key, entry, identityProvider){
+        return false;
+    }
+
+    canDelete(key, entry, identityProvider){
+        return false;
+    }
+}
 
 AccessControllers.addAccessController({AccessController: CustomAccessController})
 const app = express();
@@ -120,37 +141,40 @@ app.post('/addPeer', async (req, res) => {
     const {peerIdentity} = req.body;
     try{
         if(_dataBases.hasOwnProperty(db_name)){
-            const accessControl = db.access.write.getConfiguration()
+            const accessControl = _dataBases[db_name].access.write.getConfiguration()
 
             // Step 3: Modify the access control configuration
             accessControl.push(peerIdentity)
 
             // Step 4: Save and apply the updated access control configuration
-            db.access.write.setConfiguration(accessControl)
+            _dataBases[db_name].access.write.setConfiguration(accessControl)
 
             // Step 5: Grant write access to the new peer
-            await db.access.grant(peerIdentity, 'write')
+            await _dataBases[db_name].access.grant(peerIdentity, 'write')
 
             // Step 6: Save and apply the access control changes
-            await db.access.write.save()
+            await _dataBases[db_name].access.write.save()
         } else{
             _dataBases[db_name] = orbitdb.open(await orbitdb.determineAddress(db_name, 'docstore')).then(async ()=>{
-                const accessControl = db.access.write.getConfiguration()
+                const accessControl = _dataBases[db_name].access.write.getConfiguration()
 
                 // Step 3: Modify the access control configuration
                 accessControl.push(peerIdentity)
 
                 // Step 4: Save and apply the updated access control configuration
-                db.access.write.setConfiguration(accessControl)
+                _dataBases[db_name].access.write.setConfiguration(accessControl)
 
                 // Step 5: Grant write access to the new peer
-                await db.access.grant(peerIdentity, 'write')
+                await _dataBases[db_name].access.grant(peerIdentity, 'write')
 
                 // Step 6: Save and apply the access control changes
-                await db.access.write.save()
+                await _dataBases[db_name].access.write.save()
             });
             console.warn('WARN|',`Database ${db_name} was not loaded, loading now`);
         }
+        res.status(200).send({
+            'info': 'Peer added successfully'
+        });
     }catch (error){
         console.error('ERR | in /addPeer:', error.message);
         res.status(414).send({
@@ -372,23 +396,4 @@ async function setController(db){
     await db.access.load();// Load access controller state
     db.access.write.accessController = new CustomAccessController();
     db.access.write.save(); // Save access controller state
-}
-
-class CustomAccessController extends AccessController{
-    constructor(){
-
-    }
-    static get type () {return 'actype'}
-    
-    canAppend(entry, identityProvider){
-        return true;
-    }
-
-    canPut(key, entry, identityProvider){
-        return false;
-    }
-
-    canDelete(key, entry, identityProvider){
-        return false;
-    }
 }
