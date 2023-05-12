@@ -311,7 +311,7 @@ const server = app.listen(
             ipfs = create(new URL(`http://${options.ipfsHost}:${options.ipfsPort}`));
             orbitdb = await OrbitDB.createInstance(ipfs, {directory: options.orbitdbDir});
             console.log(`Server is running on port ${PORT}`);
-            console.log(`Orbit-db peer public key: ${orbitdb.identity.id}`)
+            console.log(`Orbit-db peer public key: ${JSON.stringify(orbitdb.identity, null, 4)}`)
         } catch (error){
             console.error(error);
             server.close();
