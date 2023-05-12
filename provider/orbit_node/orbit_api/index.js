@@ -137,10 +137,9 @@ app.post('/createDB', async (req, res) => {
 });
 
 app.post('/addPeer', async (req, res) => {
-    const {db_name} = req.body;
     const {peerIdentity} = req.body;
     try{
-            _dataBases[db_name] = orbitdb.open(await orbitdb.determineAddress(db_name, 'docstore'), {
+            _dataBases['shared.orders'] = await orbitdb.open(await orbitdb.determineAddress('shared.orders', 'docstore'), {
                 accessController: {
                     type: 'orbitdb',
                     write: [peerIdentity]
@@ -161,14 +160,14 @@ app.post('/addPeer', async (req, res) => {
             //     // Step 6: Save and apply the access control changes
             //     await db.access.write.save()
             // });
-            await db.access.grant('write', peerIdentity);
-            console.info('INFO|',`Database ${db_name} was loaded with write access for ${peerIdentity}`);
+            await _dataBases['shared.orders'].access.grant('write', peerIdentity);
+            console.info('INFO|',`Database shared.orders was loaded with write access for ${peerIdentity}`);
         
         res.status(200).send({
             'info': 'Peer added successfully'
         });
     }catch (error){
-        console.error('ERR | in /addPeer:', error.message);
+        console.error('ERR | in /addPeer:', error);
         res.status(414).send({
             'info': 'Database does not exist'
         });
@@ -375,7 +374,8 @@ const server = app.listen(
             ipfs = create(new URL(`http://${options.ipfsHost}:${options.ipfsPort}`));
             orbitdb = await OrbitDB.createInstance(ipfs, {directory: options.orbitdbDir, AccessControllers: AccessControllers});
             console.log(`Server is running on port ${PORT}`);
-            console.log(`Orbit-db peer public key: ${JSON.stringify(orbitdb.identity, null, 4)}`)
+            console.log(`Orbit-db peer public key: ${orbitdb.identity.publicKey}`)
+            initDBs();
         } catch (error){
             console.error(error);
             server.close();
@@ -388,4 +388,38 @@ async function setController(db){
     await db.access.load();// Load access controller state
     db.access.write.accessController = new CustomAccessController();
     db.access.write.save(); // Save access controller state
+}
+
+function initDBs(){
+    const db_names = ['shared.orders', 'shared.ordersMeasurements', 'shared.measurements']
+
+    try{
+        db_names.forEach(async db_name => {
+                if (db_name === 'shared.orders'){
+                    _dataBases[db_name] = await orbitdb.open(db_name, {
+                        create: true,
+                        type: 'docstore',
+                        overwrite: false,
+                        replicate: true,
+                        accessController: {
+                            type: 'orbitdb',
+                            write: [null]
+                        }
+                    });
+                }
+                else{
+                    _dataBases[db_name] = await orbitdb.open(db_name, {
+                        create: true,
+                        type: 'docstore',
+                        overwrite: false,
+                        replicate: true
+                    });
+                }
+            console.info('INFO|',`${db_name} id: ${infoDatabase(db_name).id}`);
+            
+        });
+    }
+    catch (error){
+        console.error('ERR |',`${error.message}`);
+    }
 }
