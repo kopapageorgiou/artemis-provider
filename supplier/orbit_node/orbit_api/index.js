@@ -113,6 +113,7 @@ app.post('/createDB', async (req, res) => {
 
 app.post('/insertData', async (req, res) => {
     try{
+        console.log(_dataBases);
         const {name} = req.body;
         const {data} = req.body;
         _dataBases[name].put(data, { pin: true });
@@ -131,6 +132,7 @@ app.post('/insertData', async (req, res) => {
 
 app.post('/getData', async (req, res) => {
     try{
+        console.log(_dataBases);
         const {name} = req.body;
         //const {data} = req.body;
         var dataRes;
