@@ -35,7 +35,7 @@ class _dataBase():
             else:
                 attr[key] = data[key]
 
-        return requests.post(self.BASE_URL+'/insertData', json={"name": self.dbname, "data": attr}).json()
+        return requests.post(self.BASE_URL+'/insertMeasurements', json={"name": self.dbname, "data": attr}).json()
     
     def query(self, query: dict) -> dict:
         #assert 'key' in query, "Query must contain a key attribute"
