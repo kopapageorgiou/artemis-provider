@@ -3,8 +3,8 @@ FROM node:gallium-bullseye-slim
 WORKDIR /root/orbit_api
 
 COPY orbit_api/package*.json .
-COPY orbit_api/index.js .
 RUN npm install
+COPY orbit_api/index.js .
 
 WORKDIR /root
 
