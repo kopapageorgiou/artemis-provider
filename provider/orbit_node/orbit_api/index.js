@@ -122,10 +122,10 @@ app.post('/createDB', async (req, res) => {
         setController(_dataBases[name]);
 
         console.info('INFO|',`Database ${name} created`);
-        writeID(name, db.id);
+        writeID(name, _dataBases[name].id);
         res.status(200).send({
             'info': 'Database created',
-            'database_id': db.id
+            'database_id': _dataBases[name].id
         });
     } catch (error){
         console.error('ERR | in /createDB:', error.message);
@@ -140,38 +140,30 @@ app.post('/addPeer', async (req, res) => {
     const {db_name} = req.body;
     const {peerIdentity} = req.body;
     try{
-        if(_dataBases.hasOwnProperty(db_name)){
-            const accessControl = _dataBases[db_name].access.write.getConfiguration()
-
-            // Step 3: Modify the access control configuration
-            accessControl.push(peerIdentity)
-
-            // Step 4: Save and apply the updated access control configuration
-            _dataBases[db_name].access.write.setConfiguration(accessControl)
-
-            // Step 5: Grant write access to the new peer
-            await _dataBases[db_name].access.grant(peerIdentity, 'write')
-
-            // Step 6: Save and apply the access control changes
-            await _dataBases[db_name].access.write.save()
-        } else{
-            _dataBases[db_name] = orbitdb.open(await orbitdb.determineAddress(db_name, 'docstore')).then(async ()=>{
-                const accessControl = _dataBases[db_name].access.write.getConfiguration()
-
-                // Step 3: Modify the access control configuration
-                accessControl.push(peerIdentity)
-
-                // Step 4: Save and apply the updated access control configuration
-                _dataBases[db_name].access.write.setConfiguration(accessControl)
-
-                // Step 5: Grant write access to the new peer
-                await _dataBases[db_name].access.grant(peerIdentity, 'write')
-
-                // Step 6: Save and apply the access control changes
-                await _dataBases[db_name].access.write.save()
+            _dataBases[db_name] = orbitdb.open(await orbitdb.determineAddress(db_name, 'docstore'), {
+                accessController: {
+                    type: 'orbitdb',
+                    write: [peerIdentity]
+                }
             });
-            console.warn('WARN|',`Database ${db_name} was not loaded, loading now`);
-        }
+            // }).then(async (db)=>{
+            //     const accessControl = db.access._write
+
+            //     // Step 3: Modify the access control configuration
+            //     accessControl.push(peerIdentity)
+
+            //     // Step 4: Save and apply the updated access control configuration
+            //     db.access._write= accessControl
+
+            //     // Step 5: Grant write access to the new peer
+            //     await db.access.grant('write', peerIdentity)
+
+            //     // Step 6: Save and apply the access control changes
+            //     await db.access.write.save()
+            // });
+            await db.access.grant('write', peerIdentity);
+            console.info('INFO|',`Database ${db_name} was loaded with write access for ${peerIdentity}`);
+        
         res.status(200).send({
             'info': 'Peer added successfully'
         });
@@ -326,7 +318,7 @@ app.post('/loadDB', async (req, res) => {
                 dataRes = infoDatabase(name);
                 res.status(200).send({
                     'info': 'Query fetched successfully',
-                    'data': dataRes
+                    'data': _dataBases[name]
                 });
             } else{
                 _dataBases[name] = await orbitdb.open(await orbitdb.determineAddress(name, 'docstore'));
@@ -383,7 +375,7 @@ const server = app.listen(
             ipfs = create(new URL(`http://${options.ipfsHost}:${options.ipfsPort}`));
             orbitdb = await OrbitDB.createInstance(ipfs, {directory: options.orbitdbDir, AccessControllers: AccessControllers});
             console.log(`Server is running on port ${PORT}`);
-            console.log(`Orbit-db peer public key: ${orbitdb.identity.id}`)
+            console.log(`Orbit-db peer public key: ${JSON.stringify(orbitdb.identity, null, 4)}`)
         } catch (error){
             console.error(error);
             server.close();
