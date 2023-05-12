@@ -2,6 +2,11 @@ import os
 from fastapi import APIRouter
 from pydantic import BaseModel
 from cassandra.cluster import Cluster
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+from Crypto.Util.Padding import pad
+import base64
+import requests
 
 
 cluster = Cluster([os.environ['DB_HOST']])
@@ -15,6 +20,7 @@ class Measurement(BaseModel):
     current_stop_id: str
     sensor_id: str
 
+flags = {}
 
 @router.post('/insertMeasurement')
 def insert_client(measurement: Measurement):
@@ -32,3 +38,21 @@ def insert_client(measurement: Measurement):
         return {"info": "Measurement has been imported successfully", "code": 1}
     except Exception as e:
         return {"info": e, "code": 0}
+
+def checkStop(vehicle_id, stop_id):
+    if vehicle_id in flags:
+        if flags[vehicle_id] == 1 and stop_id == 0:
+            flags[vehicle_id] = 0
+            key = generateSymmetricKey()
+
+    else:
+        flags[vehicle_id] = 0
+        key = generateSymmetricKey()
+
+def generateSymmetricKey():
+    return get_random_bytes(32)
+
+def encrypt(key, value):
+    cipher = AES.new(key, AES.MODE_CBC)
+    return base64.b64encode(cipher.encrypt(pad(value, AES.block_size)))
+                
