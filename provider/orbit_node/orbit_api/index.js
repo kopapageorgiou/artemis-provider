@@ -192,6 +192,64 @@ app.post('/insertData', async (req, res) => {
     
 });
 
+/**
+ * Endpoint to insert measurements in shared databases
+ * @method: POST
+ * @body: JSON
+ * @param {let} order_id - The order id concerns the measurement
+ * @param {let} measurement_id - The measurement id to register
+ * @param {let} sensor_id - The sensor id that got the measurements
+ * @param {int} enc_measurement_value - The measurement value to register
+ * @param {let} enc_measurement_time - The timestamp that sensor got the measurement
+ * @param {let} enc_measurement_location - The location that sensor got the measurement
+ * @param {let} abe_enc_key - The encrypted symmetric key
+ */
+app.post('/insertMeasurements', async (req, res) => {
+    try{
+        const {order_id} = req.body;
+        const {measurement_id} = req.body;
+        const {sensor_id} = req.body;
+        const {enc_measurement_value} = req.body;
+        const {enc_measurement_time} = req.body;
+        const {enc_measurement_location} = req.body;
+        const {abe_enc_key} = req.body;
+
+        let temp = _dataBases['shared.measurements'].get(measurement_id);
+        if (temp.length != 0 && temp[0].sensor_id === sensor_id){
+            throw new Error('Measurement already exists');
+        }
+
+        _dataBases['shared.measurements'].put({measurement_id: measurement_id,
+                                            sensor_id: sensor_id,
+                                            enc_measurement_value: enc_measurement_value,
+                                            enc_measurement_time: enc_measurement_time,
+                                            enc_measurement_location: enc_measurement_location,
+                                            abe_enc_key: abe_enc_key});
+        
+
+        temp = _dataBases['shared.ordersMeasurements'].get(order_id);
+        if (temp.length != 0 && temp[0].measurement_id === measurement_id){
+            throw new Error('Measurement already exists');
+        }
+
+        _dataBases['shared.ordersMeasurements'].put({order_id: order_id,
+                                                    measurement_id: measurement_id});
+
+        res.status(200).send({
+            'info': 'Data inserted successfully',
+            'data_base': infoDatabase('shared.measurements')
+        });
+
+
+    }
+    catch (error){
+        console.error('ERR | in /insertMeasurements:', error.message);
+        res.status(500).send({
+            'info': 'Could not store data to database'
+        });
+    }
+});
+
 app.post('/getData', async (req, res) => {
     try{
         const {name} = req.body;
@@ -358,14 +416,12 @@ app.post('/loadDB', async (req, res) => {
     }
     
 });
-
-app.post('/test', (req, res) => {
-    const {message} = req.body;
+app.post('/initDBs', (req, res) => {
+    initDBs();
     res.status(200).send({
-        'You typed': message
-    })
+        'info': 'Databases initialized'
+    });
 });
-
 const server = app.listen(
     PORT,
     async () => {
@@ -375,7 +431,6 @@ const server = app.listen(
             orbitdb = await OrbitDB.createInstance(ipfs, {directory: options.orbitdbDir, AccessControllers: AccessControllers});
             console.log(`Server is running on port ${PORT}`);
             console.log(`Orbit-db peer public key: ${orbitdb.identity.publicKey}`)
-            initDBs();
         } catch (error){
             console.error(error);
             server.close();
@@ -394,7 +449,35 @@ function initDBs(){
     const db_names = ['shared.orders', 'shared.ordersMeasurements', 'shared.measurements']
 
     try{
-        db_names.forEach(async db_name => {
+        try{
+            db_names.forEach(async db_name => {
+                if (db_name === 'shared.orders'){
+                    _dataBases[db_name] = await orbitdb.create(db_name, 'docstore',{
+                        overwrite: false,
+                        replicate: true,
+                        indexBy: 'order_id',                       
+                        accessController:{
+                            type: 'orbitdb',
+                            write: []
+                        }
+                    });
+                } 
+                else{
+                    _dataBases[db_name] = await orbitdb.create(db_name, 'docstore',{
+                        overwrite: false,
+                        replicate: true,
+                        indexBy: ((db_name === 'shared.ordersMeasurements') ? 'order_id' : 'measurement_id'),                       
+                        accessController:{
+                            type: 'orbitdb',
+                            write: []
+                        }
+                    });
+                }
+                console.info('INFO|',`${db_name} initialized with id: ${infoDatabase(db_name).id}`);
+            })
+        }
+        catch (error){
+            db_names.forEach(async db_name => {
                 if (db_name === 'shared.orders'){
                     _dataBases[db_name] = await orbitdb.open(db_name, {
                         create: true,
@@ -415,9 +498,10 @@ function initDBs(){
                         replicate: true
                     });
                 }
-            console.info('INFO|',`${db_name} id: ${infoDatabase(db_name).id}`);
+                console.info('INFO|',`${db_name} id: ${infoDatabase(db_name).id}`);
             
-        });
+            });
+        }
     }
     catch (error){
         console.error('ERR |',`${error.message}`);
