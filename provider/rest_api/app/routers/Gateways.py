@@ -23,7 +23,7 @@ def insert_client(gateway: Gateway):
         values = (gateway.gateway_id,
                   gateway.gateway_description,
                   gateway.vehicle_id,
-                  gateway.client_id)
+                  gateway.client_id, )
         session.execute(query=query, parameters=values)
         session.shutdown()
         return {"info": "Gateway has been imported successfully", "code": 1}
