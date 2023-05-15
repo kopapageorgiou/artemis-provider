@@ -19,9 +19,9 @@ def insert_client(sensor: Sensor):
         query = '''INSERT INTO sensors
         (sensor_id, sensor_type, gateway_id)
         VALUES (%s, %s, %s)'''
-        values = (sensor.gateway_id,
+        values = (sensor.sensor_id,
                   sensor.sensor_type,
-                  sensor.gateway_id)
+                  sensor.gateway_id, )
         session.execute(query=query, parameters=values)
         session.shutdown()
         return {"info": "Sensor has been imported successfully", "code": 1}
