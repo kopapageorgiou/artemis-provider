@@ -2,12 +2,14 @@ from cassandra.cluster import Cluster
 
 cluster = Cluster(["127.0.0.1"])
 try:
-    session = cluster.connect('mkeyspace')
-except Exception as e:
     session = cluster.connect()
     query = '''CREATE KEYSPACE mKeySpace WITH replication = {'class': 'NetworkTopologyStrategy', 'replication_factor': 1}
     AND durable_writes = true;'''
     session.execute(query=query)
+except Exception as e:
+    print(e)
+    session = cluster.connect("mkeyspace")
+    
 
 query = '''
     CREATE TABLE IF NOT EXISTS clients (
@@ -37,10 +39,10 @@ query = '''
 session.execute(query=query)
 
 query = '''
-    CREATE TABLE IF NOT EXISTS measurements (
+    CREATE TABLE measurements (
     measurement_id int PRIMARY KEY,
     measurement_value int,
-    measurement_time timestamp,
+    measurement_time text,
     measurement_location text,
     current_stop_id text,
     sensor_id text,
