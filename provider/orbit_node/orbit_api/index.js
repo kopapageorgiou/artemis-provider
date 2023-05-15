@@ -218,6 +218,10 @@ app.post('/insertMeasurements', async (req, res) => {
         if (temp.length != 0 && temp[0].sensor_id === sensor_id){
             throw new Error('Measurement already exists');
         }
+        temp = _dataBases['shared.ordersMeasurements'].get(order_id);
+        if (temp.length != 0 && temp[0].measurement_id === measurement_id){
+            throw new Error('Pair order-measurement already exists');
+        }
 
         _dataBases['shared.measurements'].put({measurement_id: measurement_id,
                                             sensor_id: sensor_id,
@@ -227,10 +231,6 @@ app.post('/insertMeasurements', async (req, res) => {
                                             abe_enc_key: abe_enc_key});
         
 
-        temp = _dataBases['shared.ordersMeasurements'].get(order_id);
-        if (temp.length != 0 && temp[0].measurement_id === measurement_id){
-            throw new Error('Measurement already exists');
-        }
 
         _dataBases['shared.ordersMeasurements'].put({order_id: order_id,
                                                     measurement_id: measurement_id});
@@ -243,7 +243,7 @@ app.post('/insertMeasurements', async (req, res) => {
 
     }
     catch (error){
-        console.error('ERR | in /insertMeasurements:', error.message);
+        console.error('ERR | in /insertMeasurements:', error);
         res.status(500).send({
             'info': 'Could not store data to database'
         });
