@@ -17,6 +17,7 @@ cluster = Cluster([os.environ['DB_HOST']])
 router = APIRouter()
 logging.basicConfig(level=logging.DEBUG)
 class Measurement(BaseModel):
+    order_id: str #Must be known from the caller
     measurement_id: int
     measurement_value: int
     measurement_timestamp: str
@@ -25,60 +26,70 @@ class Measurement(BaseModel):
     sensor_id: str
 
 flags = {}
+keys = {}
 
 @router.post('/insertMeasurement')
 def insert_client(measurement: Measurement):
     try:
         session = cluster.connect('mkeyspace')
-        logging.debug("0")
         query = '''INSERT INTO measurements
         (measurement_id, current_stop_id, measurement_location, measurement_time, measurement_value, sensor_id)
         VALUES (%s, %s, %s, %s, %s, %s)'''
-        logging.debug("00")
+
         values = (measurement.measurement_id,
                     measurement.current_stop_id,
                     measurement.measurement_location,
                     measurement.measurement_timestamp,
                     measurement.measurement_value,
-                    measurement.sensor_id)
-        logging.debug("01")
-        logging.debug("0a")
+                    measurement.sensor_id, )
         session.execute(query=query, parameters=values)
-        logging.debug("0b")
+        query = '''SELECT * FROM sensors WHERE sensor_id = %s'''
+        gateway_id = session.execute(query, (measurement.sensor_id,)).one().gateway_id
+        query = '''SELECT vehicle_id FROM gateways WHERE gateway_id = %s'''
+        vehicle_id = session.execute(query, (gateway_id,)).one().vehicle_id
         session.shutdown()
-        logging.debug("1")
+        checkStop(vehicle_id, int(measurement.current_stop_id))
+        enc_measurement_value = encrypt(keys[vehicle_id], str(measurement.measurement_value))
+        enc_measurement_time = encrypt(keys[vehicle_id], measurement.measurement_timestamp)
+        enc_measurement_location = encrypt(keys[vehicle_id], measurement.measurement_location)
         orbitdb = OrbitdbAPI(orbithost=os.environ['ORBIT_HOST'], port=3000)
-        logging.debug("2")
         res = orbitdb.insertMeasurements({
-            "order_id": 2,
+            "order_id": measurement.order_id,
             "measurement_id": measurement.measurement_id,
             "sensor_id": measurement.sensor_id,
-            "enc_measurement_value": measurement.measurement_value,
-            "enc_measurement_time": measurement.measurement_timestamp,
-            "enc_measurement_location": measurement.measurement_location,
-            "abe_enc_key": 'test',
+            "enc_measurement_value": enc_measurement_value,
+            "enc_measurement_time": enc_measurement_time,
+            "enc_measurement_location": enc_measurement_location,
+            "abe_enc_key": keys[vehicle_id],
             
         })
-        logging.debug("3")
         return {"info": "Measurement has been imported successfully", "code": 1, "debug": res}
     except Exception as e:
         logging.debug(e)
         return {"info": e, "code": 0}
 
 def checkStop(vehicle_id, stop_id):
+    logging.debug("Checking for stop")
     if vehicle_id in flags:
+        logging.debug("vehicle exist with key")
         if flags[vehicle_id] == 1 and stop_id == 0:
+            logging.debug("switching keys")
             flags[vehicle_id] = 0
-            key = generateSymmetricKey()
+            keys[vehicle_id] = generateSymmetricKey()
 
     else:
+        logging.debug("vehicle register 1st time")
         flags[vehicle_id] = 0
-        key = generateSymmetricKey()
-
+        keys[vehicle_id] = generateSymmetricKey()
+    
 def generateSymmetricKey():
-    return get_random_bytes(32)
+    logging.debug("Generating key")
+    return base64.b64encode(get_random_bytes(32)).decode('utf-8')
 
 def encrypt(key, value):
+    key = key.encode('utf-8')
+    key = base64.b64decode(key)
     cipher = AES.new(key, AES.MODE_CBC)
-    return base64.b64encode(cipher.encrypt(pad(value, AES.block_size)))
+    logging.debug("Encrypting data")
+    return base64.b64encode(cipher.encrypt(pad(bytes(value, 'utf-8'), AES.block_size))).decode('utf-8')
                 
