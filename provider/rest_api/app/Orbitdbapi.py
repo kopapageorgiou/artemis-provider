@@ -10,6 +10,13 @@ class OrbitdbAPI():
 
         #self.key = response['data_base']['options']['indexBy']
         return _dataBase(response['data'], self.BASE_URL)
+
+    def insertMeasurements(self, data: dict) -> dict:
+        assert 'measurement_id' in data.keys(), "Data must contain an attribute named key"
+        # attr = {}
+        # for key in data.keys():
+        #     attr[key] = data[key]
+        return requests.post(self.BASE_URL+'/insertMeasurements', json=data).json()
     
     
     # def closeDB(self, dbname: str) -> dict:
@@ -26,8 +33,8 @@ class _dataBase():
     # def __call__(self):
     #     return self.info
     
-    def insert(self, data: dict) -> dict:
-        assert 'key' in data.keys(), "Data must contain an attribute named key"
+    def insertMeasurements(self, data: dict) -> dict:
+        assert 'measurement_id' in data.keys(), "Data must contain an attribute named key"
         attr = {}
         for key in data.keys():
             if key == 'key':
@@ -35,7 +42,7 @@ class _dataBase():
             else:
                 attr[key] = data[key]
 
-        return requests.post(self.BASE_URL+'/insertMeasurements', json={"name": self.dbname, "data": attr}).json()
+        return requests.post(self.BASE_URL+'/insertMeasurements', json=attr).json()
     
     def query(self, query: dict) -> dict:
         #assert 'key' in query, "Query must contain a key attribute"
