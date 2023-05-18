@@ -53,14 +53,15 @@ def insert_client(measurement: Measurement):
         enc_measurement_time = encrypt(keys[vehicle_id], measurement.measurement_timestamp)
         enc_measurement_location = encrypt(keys[vehicle_id], measurement.measurement_location)
         orbitdb = OrbitdbAPI(orbithost=os.environ['ORBIT_HOST'], port=3000)
-        res = orbitdb.insertMeasurements({
+        db = orbitdb.load(dbname='shared.measurements')
+        res = db.insertMeasurements({
             "order_id": measurement.order_id,
             "measurement_id": measurement.measurement_id,
             "sensor_id": measurement.sensor_id,
             "enc_measurement_value": enc_measurement_value,
             "enc_measurement_time": enc_measurement_time,
             "enc_measurement_location": enc_measurement_location,
-            "abe_enc_key": keys[vehicle_id],
+            "abe_enc_key": keys[vehicle_id]
             
         })
         return {"info": "Measurement has been imported successfully", "code": 1, "debug": res}
