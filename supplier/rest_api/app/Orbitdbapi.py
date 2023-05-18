@@ -7,14 +7,17 @@ class OrbitdbAPI():
     
     def load(self, dbname: str) -> dict:
         response = requests.post(self.BASE_URL+'/loadDB', json={"name": dbname}).json()
-
-        #self.key = response['data_base']['options']['indexBy']
-        return _dataBase(response['data'], self.BASE_URL)
-    
+        if response['info'] == 'Query fetched successfully' and dbname == 'shared.orders':
+            return _ordersdb(response['data'], self.BASE_URL)
+        elif response['info'] == 'Query fetched successfully':
+            return _dataBase(response['data'], self.BASE_URL)
+        else:
+            return None
     
     # def closeDB(self, dbname: str) -> dict:
     #     self.key = None
 
+# ! DEPRICATED. Probably will be removed or modified
 class _dataBase():
     def __init__(self, info: dict, baseURL: str) -> None:
         self.BASE_URL = baseURL
@@ -22,20 +25,6 @@ class _dataBase():
         self.dbname = self.info['dbname']
         self.key = self.info['options']['indexBy']
         self.operators = ['eq', 'ne', 'gt', 'gte', 'lt', 'lte']
-    
-    # def __call__(self):
-    #     return self.info
-    
-    def insert(self, data: dict) -> dict:
-        assert 'key' in data.keys(), "Data must contain an attribute named key"
-        attr = {}
-        for key in data.keys():
-            if key == 'key':
-                attr[self.key] = data[key]
-            else:
-                attr[key] = data[key]
-
-        return requests.post(self.BASE_URL+'/insertData', json={"name": self.dbname, "data": attr}).json()
     
     def query(self, query: dict) -> dict:
         #assert 'key' in query, "Query must contain a key attribute"
@@ -53,3 +42,11 @@ class _dataBase():
     def getAll(self) -> dict:
         return requests.post(self.BASE_URL+'/getData', json={"name": self.dbname}).json()
 
+class _ordersdb(_dataBase):
+
+    def insertOrders(self, data: dict) -> dict:
+        assert 'order_id' in data.keys(), "Data must contain an attribute named order_id"
+        # attr = {}
+        # for key in data.keys():
+        #     attr[key] = data[key]
+        return requests.post(self.BASE_URL+'/insertOrders', json=data).json()
