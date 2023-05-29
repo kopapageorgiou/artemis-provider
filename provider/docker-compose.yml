@@ -71,6 +71,7 @@ services:
     container_name: mqtt_listener
     environment:
       MQTT_BROKER: mosquitto
+      REST_API: rest_api
     build: ./mqtt_listener/
     networks:
       - custom-b
