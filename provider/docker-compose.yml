@@ -73,11 +73,11 @@ services:
       MQTT_BROKER: mosquitto
       REST_API: rest_api
     build: ./mqtt_listener/
+    volumes:
+      - ./mqtt_listener/files:/root/mqtt_listener
     networks:
       - custom-b
 
 networks:
-  testnet:
-    external: true
   custom-b:
     driver: bridge
