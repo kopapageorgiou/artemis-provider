@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from cassandra.cluster import Cluster
-from routers import Clients, Gateways, Sensors, Measurements
+from routers import Clients, Gateways, Sensors, Measurements, GenerateKey
 import os, sys
 import logging
 from Orbitdbapi import OrbitdbAPI
@@ -15,7 +15,8 @@ app.include_router(Clients.router)
 app.include_router(Gateways.router)
 app.include_router(Sensors.router)
 app.include_router(Measurements.router)
-
+app.include_router(GenerateKey.router)
+app.state.gate_keys = {}
 @app.post('/test')
 def hello():
     try:
