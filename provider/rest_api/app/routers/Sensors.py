@@ -10,7 +10,7 @@ router = APIRouter()
 class Sensor(BaseModel):
     sensor_id: str
     sensor_type: str
-    gateway_id: str
+    gateway_id: int
 
 @router.post('/insertSensor')
 def insert_client(sensor: Sensor):
