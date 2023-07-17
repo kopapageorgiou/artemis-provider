@@ -7,5 +7,10 @@ COPY requirements.txt /root/mqtt_listener/
 
 RUN pip install -r requirements.txt
 COPY files/. .
-CMD find . -name "*.py" | entr -r python -u mqtt_listener.py
+
+# Set environment variable to run non-interactively
+ENV TERM xterm
+
+
+CMD find -name "*.py" | entr -rn python -u mqtt_listener.py
 #CMD ["python3", "-u", "./mqtt_listener.py"]
