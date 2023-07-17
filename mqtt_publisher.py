@@ -5,10 +5,13 @@ from pydantic import BaseModel
 broker="10.31.20.57"
 port=1883
 
-REPETITIONS = 5
-CLIENTS = 2
-SAMPLING_RATE = 0.1
+stations = ['user1', 'user2', 'user3', 'user4', 'user5']
 
+REPETITIONS = 16
+CLIENTS = 2
+SAMPLING_RATE = 0.3
+seq = ['data', 'data', 'event', 'data', 'data', 'event', 'data', 'data', 'data', 'event','data','data', 'event','data','data','event']
+i = 0
 regs = {}
 rand = random.Random()
 types = ["data", "event"]
@@ -35,7 +38,7 @@ client.on_connect = on_connect
 client.connect(broker, port)
 
 class Data(BaseModel):
-    reg_id: str
+    reg_id: int
     gate_id: int
     latitude: float
     longitude: float
@@ -49,21 +52,24 @@ class Data(BaseModel):
     engine: int
 
 class Event(BaseModel):
-    reg_id: str
+    reg_id: int  
     gate_id: int
     timestamp: str
     poi_id: str
     order_id: str
 
 def generate_random_data():
-    cl = rand.choices(list(clients.keys()))[0]
+    #cl = rand.choices(list(clients.keys()))[0]
+    cl = list(clients.keys())[0]
     serial[cl] += 1
     with open("serial.json", "w") as fp:
         json.dump(serial, fp)
     fp.close()
     return Data(
-        reg_id= cl,
-        gate_id= gateways[cl],
+        #reg_id= int(cl),
+        reg_id = 100200,
+        #gate_id= gateways[cl],
+        gate_id= 14999,
         latitude= rand.uniform(-90.0, 90.0),
         longitude= rand.uniform(-180.0, 180.0),
         timestamp= datetime.now().strftime("%Y/%m/%d %H:%M:%S"),
@@ -73,29 +79,38 @@ def generate_random_data():
         signal= rand.choices(["H","L"], [80, 20], k=1)[0],
         serial= serial[cl],
         signature= None,
-        engine= rand.choices([0,1], [80, 20], k=1)[0]
+        engine= rand.choices([1,0], [80, 20], k=1)[0]
     )
 
 def generate_random_event():
-    cl = rand.choices(list(clients.keys()))[0]
+    #cl = rand.choices(list(clients.keys()))[0]
+    cl = list(clients.keys())[0]
+    global stations
     
+    rnd_station = random.choice(stations)
+    stations.remove(rnd_station)
+
     return Event(
-        reg_id= cl,
-        gate_id= gateways[cl],
+        #reg_id= int(cl), 
+        reg_id = 100200,
+        #gate_id= gateways[cl],
+        gate_id= 14999,
         timestamp= datetime.now().strftime("%Y/%m/%d %H:%M:%S"),
-        poi_id= str(rand.randint(0, 15)),
+        poi_id= rnd_station, #random user apo stations
         order_id= str(rand.randint(30000, 40000))
     )
 
 def generate_random_type():
-    chosen_type = rand.choices(types, weights=(70, 30), k=1)[0]
+    #chosen_type = rand.choices(types, weights=(70, 30), k=1)[0]
+    global seq, i
+    chosen_type = seq[i]
+    i += 1
     if chosen_type == "data":
         return chosen_type, generate_random_data()
     else:
         return chosen_type, generate_random_event()
 
-for i in range(REPETITIONS):
-
+for j in range(len(seq)):
     client.loop_start()
     chosen_type, obj = generate_random_type()
     attr = {
@@ -103,6 +118,7 @@ for i in range(REPETITIONS):
             obj.json()
         ]
     }
+    print(attr, "\n")
     ret = client.publish(f"{obj.reg_id}/{obj.gate_id}/{chosen_type}", json.dumps(attr))
     time.sleep(SAMPLING_RATE)
     client.loop_stop()
