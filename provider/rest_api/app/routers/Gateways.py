@@ -8,10 +8,10 @@ cluster = Cluster([os.environ['DB_HOST']])
 router = APIRouter()
 
 class Gateway(BaseModel):
-    gateway_id: str
+    gateway_id: int
     gateway_description: str
     vehicle_id: str
-    client_id: str
+    client_id: int
 
 @router.post('/insertGateway')
 def insert_client(gateway: Gateway):

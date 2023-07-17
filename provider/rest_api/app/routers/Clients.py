@@ -8,7 +8,7 @@ cluster = Cluster([os.environ['DB_HOST']])
 router = APIRouter()
 
 class Client(BaseModel):
-    client_id: str
+    client_id: int
     client_name: str
 
 @router.post('/insertClient')

@@ -6,11 +6,16 @@ import logging
 from Orbitdbapi import OrbitdbAPI
 #import pip_system_certs.wrapt_requests
 #import ipfshttpclient as ipfs
-
+from utils.vault_abe import Vault
 cluster = Cluster([os.environ['DB_HOST']])
 
 app = FastAPI()
-
+ 
+app.state.gate_stops = {}
+app.state.gate_stops[14999] = ["user1", "user2", "user3", "user4", "user5"]
+logging.debug(f"Init stations: {app.state.gate_stops[14999]}")
+#app.state.vault = Vault(f"https://{os.environ['VAULT_HOST']}:8200")
+app.state.vault = Vault("https://143.42.63.38:8200")
 app.include_router(Clients.router)
 app.include_router(Gateways.router)
 app.include_router(Sensors.router)

@@ -10,11 +10,14 @@ logging.basicConfig(level=logging.DEBUG)
 
 class Gateway(BaseModel):
     gateway_id: int
+    poi_id: str
 
 
 @router.post('/generateKey')
 def generate_key(gateway: Gateway, request: Request):
     try:
+        request.app.state.gate_stops[gateway.gateway_id].remove(gateway.poi_id)
+        logging.debug("Stations: "+str(request.app.state.gate_stops[gateway.gateway_id]))
         request.app.state.gate_keys[gateway.gateway_id] = base64.b64encode(get_random_bytes(32)).decode('utf-8')
         logging.debug(request.app.state.gate_keys)
         return {"info": "Key changed", "code": 1}
