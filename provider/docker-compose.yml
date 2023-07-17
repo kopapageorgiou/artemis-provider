@@ -47,6 +47,7 @@ services:
     environment:
       DB_HOST: scylla
       ORBIT_HOST: orbitdb
+      #VAULT_HOST: vault
     ports:
       - "8000:8000"
     volumes:
@@ -77,6 +78,19 @@ services:
       - ./mqtt_listener/files:/root/mqtt_listener
     networks:
       - custom-b
+
+  # vault:
+  #   container_name: vault-abe
+  #   image: vault-abe:latest
+  #   ports:
+  #     - "8200:8200"
+  #   volumes:
+  #     - "./vault-secrets-abe/other/docker/vault/config:/home/vault/config:rw"
+  #     - "./vault-secrets-abe/other/docker/configs:/home/vault/other/configs:ro"
+  #     - "./vault-secrets-abe/other/docker/policies:/home/vault/other/policies:ro"
+  #   entrypoint: /home/vault/config/entrypoint.sh
+  #   networks:
+  #     - custom-b
 
 networks:
   custom-b:
