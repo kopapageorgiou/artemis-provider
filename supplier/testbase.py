@@ -10,43 +10,64 @@ except Exception as e:
     session.execute(query=query)
 
 query = '''
-    CREATE TABLE IF NOT EXISTS clients (
-    client_id text PRIMARY KEY,
-    client_name text,
-    ) WITH comment='Clients information'
+    CREATE TABLE IF NOT EXISTS batches (
+    batch_id integer PRIMARY KEY,
+    ) WITH comment='Batches information'
 ''' #! STEP 2
 session.execute(query=query)
 
 query = '''
-    CREATE TABLE IF NOT EXISTS gateways (
-    gateway_id text PRIMARY KEY,
-    gateway_description text,
-    vehicle_id text,
-    client_id text,
-    ) WITH comment='Gateways information'
+    CREATE TABLE IF NOT EXISTS products (
+    product_id text PRIMARY KEY,
+    batch_id integer,
+    order_id text
+    ) WITH comment='Products information'
 ''' #! STEP 2
 session.execute(query=query)
 
 query = '''
-    CREATE TABLE IF NOT EXISTS sensors (
-    sensor_id text PRIMARY KEY,
-    sensor_type text,
-    gateway_id text,
-    ) WITH comment='Sensors information'
+    CREATE TABLE IF NOT EXISTS stops (
+    customer_id text PRIMARY KEY,
+    stop_id text,
+    location text
+    ) WITH comment='Stops information'
 ''' #! STEP 2
 session.execute(query=query)
 
 query = '''
-    CREATE TABLE IF NOT EXISTS measurements (
-    measurement_id int PRIMARY KEY,
-    measurement_value int,
-    measurement_time timestamp,
-    measurement_location text,
-    current_stop_id text,
-    sensor_id text,
-    ) WITH comment='Measurements information'
+    CREATE TABLE IF NOT EXISTS customers (
+    customer_id int PRIMARY KEY,
+    customer_name text
+    ) WITH comment='Customers information'
 ''' #! STEP 2
 session.execute(query=query)
+
+query = '''
+    CREATE TABLE IF NOT EXISTS vehicles (
+    vehicle_id str PRIMARY KEY
+    ) WITH comment='Vehicles information'
+''' #! STEP 2
+session.execute(query=query)
+
+query = '''
+    CREATE TABLE IF NOT EXISTS shipments (
+    shipment_id str PRIMARY KEY,
+    shipment_date date,
+    vehicle_id str
+    ) WITH comment='Shipments information'
+''' #! STEP 2
+session.execute(query=query)
+
+query = '''
+    CREATE TABLE IF NOT EXISTS orders (
+    order_id str PRIMARY KEY,
+    customer_id str,
+    stop_id str,
+    shipment_id str
+    ) WITH comment='Orders information'
+''' #! STEP 2
+session.execute(query=query)
+
 session.shutdown()
 #query= '''SELECT * FROM monkeySpecies''' #! STEP 3
 #rows = 

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from cassandra.cluster import Cluster
-from routers import Clients, Gateways, Sensors, Measurements
+from routers import Batches, Customers, Orders,Products,Shipments,Stops,Vehicles
 import os, sys
 import logging
 from Orbitdbapi import OrbitdbAPI
@@ -11,7 +11,7 @@ cluster = Cluster([os.environ['DB_HOST']])
 
 app = FastAPI()
 
-app.include_router(Clients.router)
+app.include_router(Batches.router)
 app.include_router(Gateways.router)
 app.include_router(Sensors.router)
 app.include_router(Measurements.router)
