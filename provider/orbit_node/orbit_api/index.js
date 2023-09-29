@@ -117,67 +117,52 @@ function getQuery(db, attribute, operator, value){
 /**
  * Method to initialize ARTEMIS shared databases
  */
-function initDBs(){
+function initDBs(orbit){
     const db_names = ['shared.orders', 'shared.ordersMeasurements', 'shared.measurements']
 
-    try{
-        try{
-            db_names.forEach(async db_name => {
-                if (db_name === 'shared.orders'){
-                    _dataBases[db_name] = await orbitdb.create(db_name, 'docstore',{
-                        overwrite: false,
-                        replicate: true,
-                        indexBy: 'order_id',                       
-                        accessController:{
-                            type: 'orbitdb',
-                            write: []
-                        }
-                    });
-                } 
-                else{
-                    _dataBases[db_name] = await orbitdb.create(db_name, 'docstore',{
-                        overwrite: false,
-                        replicate: true,
-                        indexBy: ((db_name === 'shared.ordersMeasurements') ? 'order_id' : 'measurement_id'),                       
-                        accessController:{
-                            type: 'orbitdb',
-                            write: []
-                        }
-                    });
-                }
-                console.info('INFO|',`${db_name} initialized with id: ${infoDatabase(db_name).id}`);
-            })
-        }
-        catch (error){
-            db_names.forEach(async db_name => {
-                if (db_name === 'shared.orders'){
-                    _dataBases[db_name] = await orbitdb.open(db_name, {
+    db_names.forEach(async (name) => {
+        if (name.includes('orders')){
+            try{
+                _dataBases[name] = await orbit.determineAddress(name, 'docstore').then((address) => {
+                    return orbit.open(address, {
                         create: true,
                         type: 'docstore',
                         overwrite: false,
                         replicate: true,
+                        indexBy: 'order_id',
                         accessController: {
                             type: 'orbitdb',
-                            write: [null]
+                            write: []
                         }
                     });
-                }
-                else{
-                    _dataBases[db_name] = await orbitdb.open(db_name, {
+                });
+            } catch(error) {
+                console.log('ERR |',`${error.message}`);
+
+            }
+        }
+        else{
+            try{
+                _dataBases[name] = await orbit.determineAddress(name, 'docstore').then((address) => {
+                    return orbit.open(address, {
                         create: true,
                         type: 'docstore',
                         overwrite: false,
-                        replicate: true
+                        replicate: true,
+                        indexBy: 'measurement_id',
+                        accessController: {
+                            type: 'orbitdb',
+                            write: []
+                        }
                     });
-                }
-                console.info('INFO|',`${db_name} id: ${infoDatabase(db_name).id}`);
-            
-            });
+                });
+            } catch(error) {
+                console.log('ERR |',`${error.message}`);
+
+            }
         }
-    }
-    catch (error){
-        console.error('ERR |',`${error.message}`);
-    }
+        console.info('INFO|',`${name} initialized with id: ${infoDatabase(name).id}`);
+    });
 }
 
 /**
@@ -336,17 +321,17 @@ app.post('/insertMeasurements', async (req, res) => {
             throw new Error('Pair order-measurement already exists');
         }
 
-        _dataBases['shared.measurements'].put({measurement_id: measurement_id,
-                                            sensor_id: sensor_id,
-                                            enc_measurement_value: enc_measurement_value,
-                                            enc_measurement_time: enc_measurement_time,
-                                            enc_measurement_location: enc_measurement_location,
-                                            abe_enc_key: abe_enc_key});
+        _dataBases['shared.measurements'].put({'measurement_id': measurement_id,
+                                            'sensor_id': sensor_id,
+                                            'enc_measurement_value': enc_measurement_value,
+                                            'enc_measurement_time': enc_measurement_time,
+                                            'enc_measurement_location': enc_measurement_location,
+                                            'abe_enc_key': abe_enc_key});
         
 
 
-        _dataBases['shared.ordersMeasurements'].put({order_id: order_id,
-                                                    measurement_id: measurement_id});
+        _dataBases['shared.ordersMeasurements'].put({'order_id': order_id,
+                                                    'measurement_id': measurement_id});
 
         res.status(200).send({
             'info': 'Data inserted successfully',
@@ -518,15 +503,16 @@ app.post('/loadDB', async (req, res) => {
 
 /**
  * Endpoint to initialize ARTEMIS shared databases
+ * !DEPRICATED
  * @method: POST
  * @body: JSON
  */
-app.post('/initDBs', (req, res) => {
-    initDBs();
-    res.status(200).send({
-        'info': 'Databases initialized'
-    });
-});
+// app.post('/initDBs', (req, res) => {
+//     initDBs();
+//     res.status(200).send({
+//         'info': 'Databases initialized'
+//     });
+// });
 
 /**
  * Server initialization
@@ -537,9 +523,12 @@ const server = app.listen(
         try{
             
             ipfs = create(new URL(`http://${options.ipfsHost}:${options.ipfsPort}`));
-            orbitdb = await OrbitDB.createInstance(ipfs, {directory: options.orbitdbDir, AccessControllers: AccessControllers});
-            console.log(`Server is running on port ${PORT}`);
-            console.log(`Orbit-db peer public key: ${orbitdb.identity.publicKey}`)
+            orbitdb = await OrbitDB.createInstance(ipfs, {directory: options.orbitdbDir, AccessControllers: AccessControllers}).then((orbit) => {
+                initDBs(orbit);
+                console.log(`Server is running on port ${PORT}`);
+                console.log(`Orbit-db peer public key: ${orbitdb.identity.publicKey}`);
+                return orbit;
+            });
         } catch (error){
             console.error(error);
             server.close();
