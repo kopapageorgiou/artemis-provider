@@ -283,3 +283,6 @@ dist
 .pnp.*
 provider/mosquitto/data/mosquitto.db
 measurements.csv
+configuration/config.env
+ipfs/swarm.key
+configuration/config.env
