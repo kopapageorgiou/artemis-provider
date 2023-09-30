@@ -526,7 +526,7 @@ const server = app.listen(
             orbitdb = await OrbitDB.createInstance(ipfs, {directory: options.orbitdbDir, AccessControllers: AccessControllers}).then((orbit) => {
                 initDBs(orbit);
                 console.log(`Server is running on port ${PORT}`);
-                console.log(`Orbit-db peer public key: ${orbitdb.identity.publicKey}`);
+                console.log(`Orbit-db peer public key: ${orbit.identity.publicKey}`);
                 return orbit;
             });
         } catch (error){
