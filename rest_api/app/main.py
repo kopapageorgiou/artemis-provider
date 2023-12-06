@@ -1,36 +1,47 @@
 from fastapi import FastAPI
 from cassandra.cluster import Cluster
-from routers import Clients, Gateways, Sensors, Measurements, GenerateKey
+from requests import session
+from routers import Clients, Gateways, Sensors, Measurements, GenerateKey, RetrieveData, Legs
 import os, sys
 import logging
 from Orbitdbapi import OrbitdbAPI
+from time import time
 #import pip_system_certs.wrapt_requests
 #import ipfshttpclient as ipfs
 from utils.vault_abe import Vault
-cluster = Cluster([os.environ['DB_HOST']])
+cluster = None
 
 app = FastAPI()
- 
-app.state.gate_stops = {}
-app.state.gate_stops[14999] = ["user1", "user2", "user3", "user4", "user5"]
-logging.debug(f"Init stations: {app.state.gate_stops[14999]}")
-#app.state.vault = Vault(f"https://{os.environ['VAULT_HOST']}:8200")
-app.state.vault = Vault("https://143.42.63.38:8200")
-app.include_router(Clients.router)
-app.include_router(Gateways.router)
-app.include_router(Sensors.router)
-app.include_router(Measurements.router)
-app.include_router(GenerateKey.router)
-app.state.gate_keys = {}
-@app.post('/test')
-def hello():
+
+def init():
+    #app = FastAPI()
+    app.state.gate_stops = {}
+    app.state.gate_keys = {}
+    app.state.gate_stops = {}
+    app.state.encrypted_symmetric_keys = {}
+    #app.state.gate_stops[14999] = ["user1", "user2", "user3", "user4", "user5"]
+    #logging.debug(f"Init stations: {app.state.gate_stops[14999]}")
+    #app.state.vault = Vault(f"https://{os.environ['VAULT_HOST']}:8200")
+    app.state.vault = Vault("https://143.42.63.38:8200")
+    app.include_router(Clients.router)
+    app.include_router(Gateways.router)
+    app.include_router(Sensors.router)
+    app.include_router(Measurements.router)
+    app.include_router(GenerateKey.router)
+    app.include_router(RetrieveData.router)
+    app.include_router(Legs.router)
+    app.state.gate_keys = {}
+
+while True:
+    print ("he")
     try:
-        session = cluster.connect('mkeyspace')
-        query= '''SELECT * FROM clients'''
-        rows = session.execute(query=query)
-        return{"values from clients table": [row for row in rows]}
-    except Exception as e:
-        return {"exception": e}
+        cluster = Cluster([os.environ['DB_HOST']])
+        print("Got it")
+        init()
+        break
+    except Exception:
+        logging.warn('ScyllaDB server not available, retrying in 5 seconds...')
+        time.sleep(5)
 
 
 # @app.post('/testOrbitdb')

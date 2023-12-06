@@ -4,9 +4,9 @@ import logging
 class OrbitdbAPI():
     def __init__(self, orbithost: str, port: int=3000) -> None:
         self.BASE_URL = f"http://{orbithost}:{str(port)}"
-        #self.operators = ['eq', 'ne', 'gt', 'gte', 'lt', 'lte']
+        self.operators = ['eq', 'ne', 'gt', 'gte', 'lt', 'lte']
     
-    def load(self, dbname: str) -> dict:
+    def load(self, dbname: str):
         response = requests.post(self.BASE_URL+'/loadDB', json={"name": dbname}).json()
         if response['info'] == 'Query fetched successfully' and dbname == 'shared.measurements':
             logging.debug("here")
@@ -14,7 +14,7 @@ class OrbitdbAPI():
         elif response['info'] == 'Query fetched successfully':
             return _dataBase(response['data'], self.BASE_URL)
         else:
-            return None
+            raise Exception("Database does not exist")
     
     
     # def closeDB(self, dbname: str) -> dict:

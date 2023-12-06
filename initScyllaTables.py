@@ -6,9 +6,10 @@ try:
     query = '''CREATE KEYSPACE mKeySpace WITH replication = {'class': 'NetworkTopologyStrategy', 'replication_factor': 1}
     AND durable_writes = true;'''
     session.execute(query=query)
+    #session = cluster.connect("mkeyspace")
 except Exception as e:
     print(e)
-    session = cluster.connect("mkeyspace")
+session = cluster.connect("mkeyspace")
     
 
 query = '''
