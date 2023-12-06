@@ -285,4 +285,4 @@ provider/mosquitto/data/mosquitto.db
 measurements.csv
 configuration/config.env
 ipfs/swarm.key
-.vscode/settings.json
+.vscode
