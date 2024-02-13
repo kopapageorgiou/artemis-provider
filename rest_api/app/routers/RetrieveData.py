@@ -2,6 +2,7 @@ import os, logging
 from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel, Field
 from Orbitdbapi import OrbitdbAPI
+import typing
 
 router = APIRouter()
 logging.basicConfig(level=logging.DEBUG)
@@ -10,7 +11,7 @@ class Query(BaseModel):
     database_name: str = Field(..., description="The name of the database to query")
     attribute: str = Field(..., description="The attribute to query")
     operator: str = Field(..., description="The operator to use in the query")
-    value: str = Field(..., description="The value to query")
+    value: typing.Any = Field(..., description="The value to query")
 
     model_config = {
         "json_schema_extra": {

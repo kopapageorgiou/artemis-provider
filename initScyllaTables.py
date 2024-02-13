@@ -40,15 +40,40 @@ query = '''
 session.execute(query=query)
 
 query = '''
-    CREATE TABLE measurements (
-    measurement_id int PRIMARY KEY,
+    CREATE TABLE IF NOT EXISTS measurements (
+    measurement_id int,
     measurement_value float,
-    measurement_time text,
+    measurement_time timestamp,
     measurement_location text,
     sensor_id text,
+    PRIMARY KEY (sensor_id, measurement_time, measurement_id)
     ) WITH comment='Measurements information'
 ''' #! STEP 2
 session.execute(query=query)
+
+query = '''
+    CREATE TABLE IF NOT EXISTS commitments (
+    hash_string text PRIMARY KEY,
+    signature text,
+    gateway_id text,
+    begin_t timestamp,
+    end_t timestamp,
+    ) WITH comment='Commitments information'
+''' #! STEP 2
+
+session.execute(query=query)
+
+# query = '''
+#     CREATE TABLE IF NOT EXISTS measurements2 (
+#     measurement_id int,
+#     measurement_value float,
+#     measurement_time timestamp,
+#     measurement_location text,
+#     sensor_id text,
+#     PRIMARY KEY (sensor_id, measurement_time)
+#     ) WITH comment='Measurements information'
+# ''' #! STEP 2
+# session.execute(query=query)
 session.shutdown()
 #query= '''SELECT * FROM monkeySpecies''' #! STEP 3
 #rows = 

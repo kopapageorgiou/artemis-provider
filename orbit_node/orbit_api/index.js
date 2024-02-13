@@ -113,6 +113,34 @@ function getQuery(db, attribute, operator, value){
             return db.query((doc) => doc[attribute] === value);
     }
 }
+function getQueryFromOrders(db, attribute, operator, value){
+    var temp;
+    switch(operator){
+        case 'eq':
+            temp = db.query((doc) => doc['order_id'] == value);
+        case 'ne':
+            temp = db.query((doc) => doc[attribute] !== value);
+        case 'gt':
+            temp = db.query((doc) => doc[attribute] > value);
+        case 'lt':
+            temp = db.query((doc) => doc[attribute] < value);
+        case 'gte':
+            temp = db.query((doc) => doc[attribute] >= value);
+        case 'lte':
+            temp = db.query((doc) => doc[attribute] <= value);
+        default:
+            temp = db.query((doc) => doc[attribute] === value);
+    }
+    console.log(temp);
+    if (temp.length != 0){
+        var res = temp[0]['measurement_ids'].map(meas_id => _dataBases['shared.measurements'].query((doc) => doc['measurement_id'] == meas_id));
+    }
+    else{
+        return [];
+    }
+    
+    return res.flat();
+}
 
 /**
  * Method to initialize ARTEMIS shared databases
@@ -317,9 +345,9 @@ app.post('/insertMeasurements', async (req, res) => {
             throw new Error('Measurement already exists');
         }
         temp = _dataBases['shared.ordersMeasurements'].get(order_id);
-        if (temp.length != 0 && temp[0].measurement_id === measurement_id){
-            throw new Error('Pair order-measurement already exists');
-        }
+        // if (temp.length != 0 && temp[0].measurement_id === measurement_id){
+        //     throw new Error('Pair order-measurement already exists');
+        // }
 
         _dataBases['shared.measurements'].put({'measurement_id': measurement_id,
                                             'sensor_id': sensor_id,
@@ -329,9 +357,21 @@ app.post('/insertMeasurements', async (req, res) => {
                                             'abe_enc_key': abe_enc_key});
         
 
-
-        _dataBases['shared.ordersMeasurements'].put({'order_id': order_id,
-                                                    'measurement_id': measurement_id});
+        //temp = _dataBases['shared.ordersMeasurements'].query((doc) => doc['order_id'] == order_id)
+        //console.log(temp)
+        if (temp.length === 0){
+            _dataBases['shared.ordersMeasurements'].put({'order_id': order_id, 'measurement_ids': [measurement_id]});
+        }
+        else{
+            
+            var temp2 = temp[0]['measurement_ids']
+            temp2.push(measurement_id);
+            // _dataBases['shared.ordersMeasurements'].put({'order_id': order_id,
+            //                                             'measurement_id': measurement_id});
+            _dataBases['shared.ordersMeasurements'].put({'order_id': order_id, 'measurement_ids': temp2});
+            console.log(temp[0]['measurement_ids'])
+        }
+        
 
         res.status(200).send({
             'info': 'Data inserted successfully',
@@ -396,18 +436,27 @@ app.post('/queryData', async (req, res) => {
         //const orbitAddress = await orbitdb.determineAddress(name, type);
         try{
             if(_dataBases.hasOwnProperty(name)){
-                dataRes = getQuery(_dataBases[name], attribute, operator, value);
+                if (name == 'shared.ordersMeasurements'){
+                    dataRes = getQueryFromOrders(_dataBases[name], attribute, operator, value);
+                }
+                else{
+                    dataRes = getQuery(_dataBases[name], attribute, operator, value);
+                }
+                
                 // for (var key in data){
                 //     if (data.hasOwnProperty(key)){
                 //         dataRes = _dataBases[name].get('');
                 //     }
                 // }
             } else{
-                _dataBases[name] = orbitdb.open(await orbitdb.determineAddress(name, 'docstore')).then(()=>{
-                    setController(_dataBases[name]);
+                // _dataBases[name] = orbitdb.open(await orbitdb.determineAddress(name, 'docstore')).then(()=>{
+                //     setController(_dataBases[name]);
+                // });
+                // console.warn('WARN|',`Database ${name} was not loaded, loading now`);
+                // dataRes = getQuery(_dataBases[name], attribute, operator, value);
+                res.status(500).send({
+                    'info': 'Database does not exist'
                 });
-                console.warn('WARN|',`Database ${name} was not loaded, loading now`);
-                dataRes = getQuery(_dataBases[name], attribute, operator, value);
             }
         }catch (error){
             console.error('ERR | in /queryData:', error.message);

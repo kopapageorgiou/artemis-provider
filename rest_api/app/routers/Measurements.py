@@ -1,6 +1,7 @@
 import os, sys
 from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel
+from datetime import datetime
 from cassandra.cluster import Cluster
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
@@ -22,7 +23,7 @@ class Measurement(BaseModel):
     gateway_id: int
     measurement_id: int
     measurement_value: float
-    measurement_timestamp: str
+    measurement_timestamp: datetime
     measurement_location: str
     sensor_id: str
 
@@ -70,7 +71,7 @@ def insert_client(measurement: Measurement, request: Request):
         #logging.debug(key)
         enc_measurement_value = encrypt(key, str(measurement.measurement_value))
         #logging.debug("12")
-        enc_measurement_time = encrypt(key, measurement.measurement_timestamp)
+        enc_measurement_time = encrypt(key, str(measurement.measurement_timestamp))
         #logging.debug("13")
         enc_measurement_location = encrypt(key, measurement.measurement_location)
         logging.debug("14")

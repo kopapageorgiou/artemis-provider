@@ -79,18 +79,19 @@ services:
     networks:
       - custom-b
 
-  # vault:
-  #   container_name: vault-abe
-  #   image: vault-abe:latest
-  #   ports:
-  #     - "8200:8200"
-  #   volumes:
-  #     - "./vault-secrets-abe/other/docker/vault/config:/home/vault/config:rw"
-  #     - "./vault-secrets-abe/other/docker/configs:/home/vault/other/configs:ro"
-  #     - "./vault-secrets-abe/other/docker/policies:/home/vault/other/policies:ro"
-  #   entrypoint: /home/vault/config/entrypoint.sh
-  #   networks:
-  #     - custom-b
+#  vault:
+#    container_name: vault-abe
+#    image: vault-abe:latest
+#    #build: ./vault-secrets-abe/
+#    ports:
+#      - "8200:8200"
+#    volumes:
+#      - /home/ubuntu/artemis-provider/vault-secrets-abe/other/docker/vault/config:/home/vault/config
+#      - /home/ubuntu/artemis-provider/vault-secrets-abe/other/docker/configs:/home/vault/other/configs
+#      - /home/ubuntu/artemis-provider/vault-secrets-abe/other/docker/policies:/home/vault/other/policies
+#    entrypoint: /home/vault/config/entrypoint.sh
+#    networks:
+#      - custom-b
 
 networks:
   custom-b:

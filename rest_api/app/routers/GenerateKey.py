@@ -20,6 +20,7 @@ def generate_key(gateway: Gateway, request: Request):
         request.app.state.gate_stops[gateway.gateway_id].remove(gateway.poi_id)
         #logging.debug("Stations: "+str(request.app.state.gate_stops[gateway.gateway_id]))
         request.app.state.gate_keys[gateway.gateway_id] = base64.b64encode(get_random_bytes(32)).decode('utf-8')
+        #request.app.state.encrypted_symmetric_keys[gateway.gateway_id] = request.app.state.gate_keys[gateway.gateway_id]
         request.app.state.encrypted_symmetric_keys[gateway.gateway_id] = vault.encrypt_abe(request.app.state.gate_keys[gateway.gateway_id],
                                                                                     policy_attrs= request.app.state.gate_stops[gateway.gateway_id])
         logging.debug(request.app.state.gate_keys)
