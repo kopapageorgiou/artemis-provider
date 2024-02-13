@@ -286,3 +286,8 @@ measurements.csv
 configuration/config.env
 ipfs/swarm.key
 .vscode
+docker-compose-vault.yml
+commit_publisher/Dockerfile
+commit_publisher/requirements.txt
+commit_publisher/files/commit_publisher.py
+mqtt_listener/files/privkey.dat
